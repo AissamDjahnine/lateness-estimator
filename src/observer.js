@@ -15,12 +15,8 @@ window.LateLabels.Observer = (function() {
     const eventDialog = document.querySelector('div[role="dialog"]');
     
     if (eventDialog) {
-      // UPDATED: Broader search strategy
-      // 1. role="listitem" (standard lists)
-      // 2. [data-email] (often attached to attendee divs)
-      // 3. [data-hovercard-id] (hoverable people)
-      // 4. li (sometimes guests are just list items)
-      const selectors = 'div[role="listitem"], div[data-email], div[data-hovercard-id], li';
+      // REMOVED 'li' from the selectors to stop catching meeting notes
+      const selectors = 'div[role="listitem"], div[data-email], div[data-hovercard-id]';
       const possibleAttendees = eventDialog.querySelectorAll(selectors);
       
       if (possibleAttendees.length > 0) {
