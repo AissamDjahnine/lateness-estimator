@@ -1,16 +1,53 @@
 .late-ext-chip {
-  display: inline-block;
-  margin-left: 8px;
-  padding: 2px 6px;
-  background-color: #f1f3f4; /* Google gray */
-  border: 1px solid #dadce0;
-  border-radius: 4px;
-  color: #5f6368;
-  font-family: 'Google Sans', Roboto, Arial, sans-serif;
-  font-size: 10px;
-  font-weight: 500;
-  vertical-align: middle;
-  white-space: nowrap;
-  line-height: 1.2;
-  z-index: 999;
+    background-color: #f1f3f4;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    border-radius: 12px;
+    padding: 2px 8px;
+    margin-left: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    white-space: nowrap;
+}
+
+.late-ext-chip:hover {
+    background-color: #e8eaed;
+    box-shadow: 0 1px 2px rgba(60, 64, 67, 0.3);
+}
+
+.late-ext-popover {
+    position: absolute;
+    z-index: 99999; /* Very high to beat GCal overlays */
+    background: white;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    padding: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.late-popover-inner {
+    display: flex;
+    gap: 8px;
+}
+
+.late-popover-inner input {
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    padding: 4px 8px;
+    font-size: 13px;
+    width: 120px;
+}
+
+.late-popover-inner button {
+    background-color: #1a73e8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 5px 10px;
+    cursor: pointer;
+    font-weight: 500;
 }

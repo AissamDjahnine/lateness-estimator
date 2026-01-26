@@ -15,8 +15,7 @@ window.LateLabels.Observer = (function() {
     const eventDialog = document.querySelector('div[role="dialog"]');
     
     if (eventDialog) {
-      // RESTORED 'li' so we can see the attendees again.
-      // We will rely on the Model to filter out the notes.
+      // Broad selectors to ensure we catch attendees
       const selectors = 'div[role="listitem"], div[data-email], div[data-hovercard-id], li';
       const possibleAttendees = eventDialog.querySelectorAll(selectors);
       

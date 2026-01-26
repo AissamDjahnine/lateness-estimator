@@ -2,41 +2,85 @@ window.LateLabels = window.LateLabels || {};
 
 window.LateLabels.UI = (function() {
   
-  function injectChip(attendee) {
-    if (!attendee.element.isConnected) return;
-
-    // 1. UNIQUE ID CHECK (The Fix for Duplicates)
-    // We create a unique ID for the chip based on the person's name
-    const chipId = 'late-chip-' + attendee.id;
+  async function injectChip(attendee) {
+    const { name, element, id } = attendee;
+    const chipId = `late-chip-${id}`;
     
-    // If a chip for this person ALREADY exists anywhere on screen, stop.
-    if (document.getElementById(chipId)) {
-      // Optional: Check if the existing chip is inside the current element's parent? 
-      // For now, strict 1-chip-per-person rule is safest.
-      return; 
-    }
+    if (document.getElementById(chipId)) return;
 
-    // 2. Element Safety Check
-    // If this specific DOM element already has a chip, stop.
-    if (attendee.element.querySelector('.late-ext-chip')) return;
-    
-    // 3. Create the chip
-    const chip = document.createElement('span');
-    chip.id = chipId; // Assign the ID so we can find it later
-    chip.className = 'late-ext-chip';
-    chip.innerText = "..."; 
-    
-    attendee.element.style.position = "relative";
-    attendee.element.appendChild(chip);
-
-    // 4. Load Data
+    // Fetch stored label or use default
+    let label = "Late?"; 
     if (window.LateLabels.Storage) {
-      window.LateLabels.Storage.getLabelForAttendee(attendee.id).then(label => {
-        chip.innerText = label;
-      });
-    } else {
-      chip.innerText = "Err";
+      label = await window.LateLabels.Storage.getStoredLabel(name) || "Might skip";
     }
+
+    const chip = document.createElement('span');
+    chip.className = 'late-ext-chip';
+    chip.id = chipId;
+    chip.textContent = label;
+
+    // Position after name
+    const nameTarget = element.querySelector('div[id*="name"]') || 
+                       element.querySelector('span') || 
+                       element.firstChild;
+    
+    if (nameTarget && nameTarget.after) {
+      nameTarget.after(chip);
+    } else {
+      element.appendChild(chip);
+    }
+
+    // Edit Feature
+    chip.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      renderEditPopover(chip, name);
+    });
+  }
+
+  function renderEditPopover(anchor, name) {
+    const existing = document.querySelector('.late-ext-popover');
+    if (existing) existing.remove();
+
+    const popover = document.createElement('div');
+    popover.className = 'late-ext-popover';
+    
+    popover.innerHTML = `
+        <div class="late-popover-inner">
+            <input type="text" id="late-edit-input" value="${anchor.textContent}" autofocus />
+            <button id="late-save-btn">Save</button>
+        </div>
+    `;
+
+    document.body.appendChild(popover);
+
+    const rect = anchor.getBoundingClientRect();
+    popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
+    popover.style.left = `${rect.left + window.scrollX}px`;
+
+    const saveLabel = async () => {
+      const newVal = document.getElementById('late-edit-input').value.trim();
+      if (newVal && window.LateLabels.Storage) {
+        anchor.textContent = newVal;
+        await window.LateLabels.Storage.updateStoredLabel(name, newVal);
+      }
+      popover.remove();
+    };
+
+    popover.querySelector('#late-save-btn').onclick = saveLabel;
+    popover.querySelector('#late-edit-input').onkeydown = (e) => {
+      if (e.key === 'Enter') saveLabel();
+    };
+
+    setTimeout(() => {
+      const closer = (e) => {
+        if (!popover.contains(e.target)) {
+          popover.remove();
+          document.removeEventListener('click', closer);
+        }
+      };
+      document.addEventListener('click', closer);
+    }, 0);
   }
 
   return {
