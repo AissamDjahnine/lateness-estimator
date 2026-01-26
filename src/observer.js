@@ -15,8 +15,9 @@ window.LateLabels.Observer = (function() {
     const eventDialog = document.querySelector('div[role="dialog"]');
     
     if (eventDialog) {
-      // REMOVED 'li' from the selectors to stop catching meeting notes
-      const selectors = 'div[role="listitem"], div[data-email], div[data-hovercard-id]';
+      // RESTORED 'li' so we can see the attendees again.
+      // We will rely on the Model to filter out the notes.
+      const selectors = 'div[role="listitem"], div[data-email], div[data-hovercard-id], li';
       const possibleAttendees = eventDialog.querySelectorAll(selectors);
       
       if (possibleAttendees.length > 0) {
