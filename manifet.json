@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "Late Labels for Google Calendar",
+  "version": "1.0.0",
+  "description": "Injects humorous arrival estimates next to attendees in Google Calendar.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://calendar.google.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://calendar.google.com/*"],
+      "js": ["src/contentScript.js"],
+      "css": ["src/styles.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "options_ui": {
+    "page": "options/options.html",
+    "open_in_tab": false
+  }
+}

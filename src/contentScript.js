@@ -1,0 +1,1 @@
+console.log('Late Labels: Extension loaded successfully.');
