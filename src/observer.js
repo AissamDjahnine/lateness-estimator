@@ -14,16 +14,18 @@ window.LateLabels.Observer = (function() {
   }
 
   function checkForEventDialog() {
-    // Google Calendar event details usually appear in a role="dialog" or generic container
-    // We are looking for the "Guests" section or email lists
-    // For this step, we just want to verify we detect the dialog opening.
-    
-    // This selector matches the standard GCal event popover
     const eventDialog = document.querySelector('div[role="dialog"]');
     
     if (eventDialog) {
-      console.log('Late Labels: Event dialog detected!');
-      // Future steps: Extract attendees and inject UI here
+      // Strategy: Attendees are almost always in role="listitem" elements.
+      // We limit our search to inside the dialog to avoid side-panel noise.
+      const listItems = eventDialog.querySelectorAll('div[role="listitem"]');
+      
+      if (listItems.length > 0) {
+        if (window.LateLabels.Model) {
+          window.LateLabels.Model.processAttendees(listItems);
+        }
+      }
     }
   }
 
