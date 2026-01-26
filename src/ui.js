@@ -8,10 +8,11 @@ window.LateLabels.UI = (function() {
     
     if (document.getElementById(chipId)) return;
 
-    // Fetch stored label or use default
-    let label = "Late?"; 
+    let label = "Might skip"; 
     if (window.LateLabels.Storage) {
-      label = await window.LateLabels.Storage.getStoredLabel(name) || "Might skip";
+      // Use the privacy-safe ID for storage lookup instead of raw name/email
+      const stored = await window.LateLabels.Storage.getStoredLabel(id);
+      if (stored) label = stored;
     }
 
     const chip = document.createElement('span');
@@ -19,9 +20,9 @@ window.LateLabels.UI = (function() {
     chip.id = chipId;
     chip.textContent = label;
 
-    // Position after name
     const nameTarget = element.querySelector('div[id*="name"]') || 
                        element.querySelector('span') || 
+                       element.querySelector('div') ||
                        element.firstChild;
     
     if (nameTarget && nameTarget.after) {
@@ -30,15 +31,14 @@ window.LateLabels.UI = (function() {
       element.appendChild(chip);
     }
 
-    // Edit Feature
     chip.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      renderEditPopover(chip, name);
+      renderEditPopover(chip, id); // Pass ID for storage persistence
     });
   }
 
-  function renderEditPopover(anchor, name) {
+  function renderEditPopover(anchor, id) {
     const existing = document.querySelector('.late-ext-popover');
     if (existing) existing.remove();
 
@@ -62,7 +62,8 @@ window.LateLabels.UI = (function() {
       const newVal = document.getElementById('late-edit-input').value.trim();
       if (newVal && window.LateLabels.Storage) {
         anchor.textContent = newVal;
-        await window.LateLabels.Storage.updateStoredLabel(name, newVal);
+        // Persist using the ID
+        await window.LateLabels.Storage.updateStoredLabel(id, newVal);
       }
       popover.remove();
     };

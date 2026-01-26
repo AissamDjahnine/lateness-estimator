@@ -3,11 +3,11 @@ window.LateLabels = window.LateLabels || {};
 window.LateLabels.Storage = (function() {
   const STORAGE_KEY = 'lateLabels';
 
-  async function updateStoredLabel(name, newLabel) {
+  async function updateStoredLabel(key, newLabel) {
     return new Promise((resolve) => {
       chrome.storage.local.get(STORAGE_KEY, (result) => {
         const labels = result[STORAGE_KEY] || {};
-        labels[name] = newLabel;
+        labels[key] = newLabel;
         chrome.storage.local.set({ [STORAGE_KEY]: labels }, () => {
           resolve();
         });
@@ -15,11 +15,11 @@ window.LateLabels.Storage = (function() {
     });
   }
 
-  async function getStoredLabel(name) {
+  async function getStoredLabel(key) {
     return new Promise((resolve) => {
       chrome.storage.local.get(STORAGE_KEY, (result) => {
         const labels = result[STORAGE_KEY] || {};
-        resolve(labels[name] || null);
+        resolve(labels[key] || null);
       });
     });
   }
