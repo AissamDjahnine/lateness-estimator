@@ -3,31 +3,26 @@ window.LateLabels = window.LateLabels || {};
 window.LateLabels.UI = (function() {
   
   function injectChip(attendee) {
-    // Safety check: ensure element is still in DOM
     if (!attendee.element.isConnected) return;
 
-    // Create the container for our label
+    // 1. Create the skeleton chip immediately (empty)
     const chip = document.createElement('span');
     chip.className = 'late-ext-chip';
+    chip.innerText = "..."; // Loading state
     
-    // SIMPLE LOGIC FOR NOW: Randomly assign a status
-    // We will make this persistent in the next step.
-    const statuses = [
-      "Typically on time",
-      "Usually 2m late",
-      "Est. 5m late",
-      "Might skip",
-      "Runs on coffee"
-    ];
-    const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
-    
-    chip.innerText = randomStatus;
-
-    // Finding where to append:
-    // We want it next to the name. The attendee element is usually a Flex container or list item.
-    // We try to append it directly to the element.
-    attendee.element.style.position = "relative"; // Ensure relative positioning context
+    // Append immediately so the user sees something happening
+    attendee.element.style.position = "relative";
     attendee.element.appendChild(chip);
+
+    // 2. Fetch the persistent label
+    if (window.LateLabels.Storage) {
+      window.LateLabels.Storage.getLabelForAttendee(attendee.id).then(label => {
+        // Update the text once data is loaded
+        chip.innerText = label;
+      });
+    } else {
+      chip.innerText = "Storage Error";
+    }
   }
 
   return {
