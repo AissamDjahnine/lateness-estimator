@@ -4,26 +4,28 @@ window.LateLabels.Observer = (function() {
   let observer = null;
   let debounceTimer = null;
 
-  // We debounce to avoid running our logic 100 times per second while GCal animates
   function handleMutations(mutations) {
     if (debounceTimer) clearTimeout(debounceTimer);
-    
     debounceTimer = setTimeout(() => {
       checkForEventDialog();
-    }, 200); // Wait 200ms after DOM stops changing
+    }, 200);
   }
 
   function checkForEventDialog() {
     const eventDialog = document.querySelector('div[role="dialog"]');
     
     if (eventDialog) {
-      // Strategy: Attendees are almost always in role="listitem" elements.
-      // We limit our search to inside the dialog to avoid side-panel noise.
-      const listItems = eventDialog.querySelectorAll('div[role="listitem"]');
+      // UPDATED: Broader search strategy
+      // 1. role="listitem" (standard lists)
+      // 2. [data-email] (often attached to attendee divs)
+      // 3. [data-hovercard-id] (hoverable people)
+      // 4. li (sometimes guests are just list items)
+      const selectors = 'div[role="listitem"], div[data-email], div[data-hovercard-id], li';
+      const possibleAttendees = eventDialog.querySelectorAll(selectors);
       
-      if (listItems.length > 0) {
+      if (possibleAttendees.length > 0) {
         if (window.LateLabels.Model) {
-          window.LateLabels.Model.processAttendees(listItems);
+          window.LateLabels.Model.processAttendees(possibleAttendees);
         }
       }
     }
