@@ -2,6 +2,11 @@
 
 Lateness Estimator is a small Chrome extension (Manifest V3) that injects short arrival-estimate chips next to attendee names in Google Calendar event details. It's designed to be privacy-first (nothing leaves the browser) and playful — labels can be deterministic, humorous, or manually edited.
 
+<p align="center">
+  <img src="assets/images/Screenshot-1.png" width="600" alt="Lateness Estimator Screenshot">
+</p>
+
+
 ## What it does
 - Injects a compact label chip next to each attendee's name in the event details dialog.
 - Chooses a deterministic estimate label per attendee (examples: "Usually 4m late", "Typically on time", "Will skip", "Estimated 12m late").
