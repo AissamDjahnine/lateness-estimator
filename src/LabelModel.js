@@ -123,6 +123,16 @@ window.LateLabels.Model = (function() {
       el.dataset.lateExtProcessed = "true";
 
       if (window.LateLabels.UI && typeof window.LateLabels.UI.injectChip === 'function') {
+        // Provide a lateHour for coloring: prefer an explicit attribute, otherwise
+        // derive a deterministic pseudo-hour from the attendee id so color is stable per person.
+        const lateHourAttr = el.getAttribute('data-late-hour');
+        if (lateHourAttr && !isNaN(Number(lateHourAttr))) {
+          attendee.lateHour = Number(lateHourAttr);
+        } else {
+          const hash = (attendee.id || '').split('').reduce((acc, ch) => acc + ch.charCodeAt(0), 0);
+          attendee.lateHour = Math.abs(hash) % 24;
+        }
+
         window.LateLabels.UI.injectChip(attendee, el);
       }
     });

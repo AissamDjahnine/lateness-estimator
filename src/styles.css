@@ -34,3 +34,8 @@
     flex-wrap: wrap;
     align-items: center;
 }
+
+/* Colored chip variants for lateness */
+.late-ext-chip.late-green { background-color: #2ecc71 !important; color: #ffffff !important; border-color: #27ae60 !important; box-shadow: 0 1px 0 rgba(0,0,0,0.05) !important; }
+.late-ext-chip.late-orange { background-color: #f39c12 !important; color: #ffffff !important; border-color: #d68910 !important; box-shadow: 0 1px 0 rgba(0,0,0,0.05) !important; }
+.late-ext-chip.late-red { background-color: #e74c3c !important; color: #ffffff !important; border-color: #c0392b !important; box-shadow: 0 1px 0 rgba(0,0,0,0.06) !important; }

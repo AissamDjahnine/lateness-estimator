@@ -24,7 +24,27 @@ window.LateLabels.UI = (function() {
     if (injectingKeys.has(dedupId)) return;
     injectingKeys.add(dedupId);
 
-    let label = "Might skip";
+    try {
+
+    // Deterministic label templates similar to requested examples:
+    // "Usually 4m late", "Usually 7m late", "Will skip", "Typically on time", "Estimated 12m late"
+    const templates = [
+      { type: 'usually', fmt: (m) => `Usually ${m}m late` },
+      { type: 'usually', fmt: (m) => `Usually ${m}m late` },
+      { type: 'will-skip', fmt: () => `Will skip` },
+      { type: 'ontime', fmt: () => `Typically on time` },
+      { type: 'estimated', fmt: (m) => `Estimated ${m}m late` }
+    ];
+
+    // A small list of plausible minute values (includes 4,7,12 from your examples)
+    const minuteBuckets = [2,3,4,5,7,8,10,12,15];
+
+    // Deterministic selection based on id so label is consistent per person
+    const idHash = ('' + id).split('').reduce((s,c)=>s + c.charCodeAt(0), 0);
+    const tpl = templates[idHash % templates.length];
+    const minute = minuteBuckets[idHash % minuteBuckets.length];
+
+    let label = tpl.fmt(minute);
     try {
       if (window.LateLabels.Storage) {
         try {
@@ -34,12 +54,16 @@ window.LateLabels.UI = (function() {
           console.error('[injectChip] Error getting stored label:', err);
         }
       }
+    } catch (e) {
+      // ignore storage errors and keep deterministic label
+    }
 
-      const chip = document.createElement('span');
-      chip.className = 'late-ext-chip';
-      chip.id = chipId;
-      chip.dataset.lateKey = dedupId;
-      chip.textContent = label;
+    const chip = document.createElement('span');
+    chip.className = 'late-ext-chip';
+    chip.id = chipId;
+    chip.dataset.lateKey = dedupId;
+    chip.dataset.lateLabel = label;
+    chip.textContent = label;
 
     // Try to find the most specific name container
     const nameTarget = parentEl.querySelector('span[aria-label]') || 
@@ -65,6 +89,41 @@ window.LateLabels.UI = (function() {
         return;
       }
     }
+
+      // Color rules:
+      // - 'ontime' -> green
+      // - 'will-skip' -> red
+      // - 'usually' or 'estimated' -> orange if 1-9 minutes, red if >9 minutes
+      let colorClass = null;
+      try {
+        if (typeof tpl !== 'undefined' && tpl && tpl.type) {
+          if (tpl.type === 'ontime') colorClass = 'late-green';
+          else if (tpl.type === 'will-skip') colorClass = 'late-red';
+          else if (tpl.type === 'usually' || tpl.type === 'estimated') {
+            // minute variable computed above; if label was overridden, try to parse minutes from it
+            let m = typeof minute !== 'undefined' ? minute : null;
+            const mMatch = (label || '').match(/(\d+)m/);
+            if (mMatch) m = Number(mMatch[1]);
+            if (m !== null) {
+              if (m >= 1 && m <= 9) colorClass = 'late-orange';
+              else if (m > 9) colorClass = 'late-red';
+            } else {
+              colorClass = 'late-orange';
+            }
+          }
+        }
+      } catch (err) {
+        // fallback to attendee.lateHour if anything fails
+        const lateHour = (attendee && attendee.lateHour !== undefined) ? attendee.lateHour : null;
+        if (lateHour !== null && !isNaN(Number(lateHour))) {
+          const h = Number(lateHour);
+          if (h >= 0 && h <= 8) colorClass = 'late-green';
+          else if (h >= 9 && h <= 15) colorClass = 'late-orange';
+          else colorClass = 'late-red';
+        }
+      }
+
+      if (colorClass) chip.classList.add(colorClass);
 
       chip.addEventListener('click', (e) => {
         e.preventDefault();
