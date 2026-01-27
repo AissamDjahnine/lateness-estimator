@@ -4,6 +4,9 @@
   "version": "1.0",
   "permissions": ["storage"],
   "host_permissions": ["https://calendar.google.com/*"],
+  "background": {
+    "service_worker": "src/background.js"
+  },
   "content_scripts": [
     {
       "matches": ["https://calendar.google.com/*"],
@@ -11,7 +14,7 @@
       "js": [
         "src/storage.js",
         "src/ui.js",
-        "src/labelModel.js",
+        "src/LabelModel.js",
         "src/observer.js",
         "src/contentScript.js"
       ]

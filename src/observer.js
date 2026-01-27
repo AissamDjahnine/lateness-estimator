@@ -13,7 +13,14 @@ window.LateLabels.Observer = (function() {
 
   function checkForEventDialog() {
     const eventDialog = document.querySelector('div[role="dialog"]');
-    
+
+    if (!eventDialog) {
+      // Dialog is gone — clear any session-level state in the model
+      if (window.LateLabels && window.LateLabels.Model && typeof window.LateLabels.Model.reset === 'function') {
+        window.LateLabels.Model.reset();
+      }
+    }
+
     if (eventDialog) {
       // Broad selectors to ensure we catch attendees
       const selectors = 'div[role="listitem"], div[data-email], div[data-hovercard-id], li';
@@ -28,7 +35,6 @@ window.LateLabels.Observer = (function() {
   }
 
   function init() {
-    console.log('Late Labels: Observer initializing...');
     const targetNode = document.body;
     const config = { childList: true, subtree: true };
 

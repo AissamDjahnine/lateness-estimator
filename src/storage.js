@@ -4,23 +4,40 @@ window.LateLabels.Storage = (function() {
   const STORAGE_KEY = 'lateLabels';
 
   async function updateStoredLabel(key, newLabel) {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(STORAGE_KEY, (result) => {
-        const labels = result[STORAGE_KEY] || {};
-        labels[key] = newLabel;
-        chrome.storage.local.set({ [STORAGE_KEY]: labels }, () => {
-          resolve();
-        });
-      });
+    return new Promise((resolve, reject) => {
+      if (!chrome || !chrome.runtime) {
+        reject(new Error('chrome.runtime not available'));
+        return;
+      }
+      chrome.runtime.sendMessage(
+        { action: 'updateLabel', key: key, label: newLabel },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve();
+          }
+        }
+      );
     });
   }
 
   async function getStoredLabel(key) {
-    return new Promise((resolve) => {
-      chrome.storage.local.get(STORAGE_KEY, (result) => {
-        const labels = result[STORAGE_KEY] || {};
-        resolve(labels[key] || null);
-      });
+    return new Promise((resolve, reject) => {
+      if (!chrome || !chrome.runtime) {
+        reject(new Error('chrome.runtime not available'));
+        return;
+      }
+      chrome.runtime.sendMessage(
+        { action: 'getLabel', key: key },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            reject(chrome.runtime.lastError);
+          } else {
+            resolve(response?.label || null);
+          }
+        }
+      );
     });
   }
 
