@@ -2,7 +2,7 @@
 
 **Effective Date:** 2026-01-27
 
-The "Late Labels" extension respects your privacy.
+The "Lateness Estimator" extension respects your privacy.
 
 ## Data Collection
 1. **Local Processing:** This extension reads attendee names displayed on the Google Calendar page solely to assign a random or user-defined "arrival estimate" label.
