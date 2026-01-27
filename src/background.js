@@ -1,4 +1,4 @@
-// Service worker for Late Labels extension
+// Service worker for Lateness Estimator extension
 // Handles message passing from content scripts to access chrome.storage API
 
 const STORAGE_KEY = 'lateLabels';

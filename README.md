@@ -1,6 +1,6 @@
-# Late Labels for Google Calendar
+# Lateness Estimator for Google Calendar
 
-Late Labels is a small Chrome extension (Manifest V3) that injects short arrival-estimate chips next to attendee names in Google Calendar event details. It's designed to be privacy-first (nothing leaves the browser) and playful — labels can be deterministic, humorous, or manually edited.
+Lateness Estimator is a small Chrome extension (Manifest V3) that injects short arrival-estimate chips next to attendee names in Google Calendar event details. It's designed to be privacy-first (nothing leaves the browser) and playful — labels can be deterministic, humorous, or manually edited.
 
 ## What it does
 - Injects a compact label chip next to each attendee's name in the event details dialog.
