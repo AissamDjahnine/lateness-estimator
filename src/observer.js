@@ -6,6 +6,8 @@ window.LateLabels.Observer = (function() {
   let lastDialog = null;
   let initialized = false;
   let pollTimer = null;
+  let dialogObserver = null;
+  let dialogBurstTimer = null;
 
   function mutationsAffectDialog(mutations, dialog) {
     if (!dialog) return true;
@@ -38,6 +40,10 @@ window.LateLabels.Observer = (function() {
         window.LateLabels.Model.reset();
       }
       lastDialog = null;
+      if (dialogObserver && typeof dialogObserver.disconnect === 'function') {
+        dialogObserver.disconnect();
+      }
+      dialogObserver = null;
       return;
     }
 
@@ -46,6 +52,24 @@ window.LateLabels.Observer = (function() {
         window.LateLabels.Model.reset();
       }
       lastDialog = eventDialog;
+
+      if (dialogObserver && typeof dialogObserver.disconnect === 'function') {
+        dialogObserver.disconnect();
+      }
+      dialogObserver = new MutationObserver(handleMutations);
+      dialogObserver.observe(eventDialog, { childList: true, subtree: true, characterData: true });
+
+      // Burst re-checks to catch async content updates when switching events
+      if (dialogBurstTimer) clearTimeout(dialogBurstTimer);
+      let attempts = 0;
+      const burst = () => {
+        attempts += 1;
+        checkForEventDialog();
+        if (attempts < 5) {
+          dialogBurstTimer = setTimeout(burst, 200);
+        }
+      };
+      dialogBurstTimer = setTimeout(burst, 200);
     }
 
     // Broad selectors to ensure we catch attendees
