@@ -14,6 +14,11 @@ Lateness Estimator is a small Chrome extension (Manifest V3) that injects short 
 - Persists user-edited labels locally through the browser storage (via a background service worker).
 - Avoids injecting chips into non-attendee rows (locations, rooms, or UI elements).
 
+## Quick usage
+1. Open a Google Calendar event (full event details dialog).
+2. Chips appear next to attendees.
+3. Click a chip to edit its label; changes persist locally.
+
 ## Key implementation notes
 - Manifest V3 content script + background service worker for storage messaging.
 - DOM MutationObserver watches Google Calendar event dialogs and injects chips when attendees are present.
@@ -21,6 +26,11 @@ Lateness Estimator is a small Chrome extension (Manifest V3) that injects short 
 	- Normalizes attendee identifiers (prefers email when available) and tracks session-level injected keys.
 	- Uses both element-level and global guards (data attributes on chips) to avoid duplicates and race conditions.
 - Privacy-first: email domains are stripped for any generated IDs and no raw email addresses are stored unmasked.
+
+## Privacy & data
+- No data leaves your browser.
+- Labels are stored in `chrome.storage.local` under the key `lateLabels`.
+- Email domains are stripped and identifiers are masked before storage.
 
 ## Installation (developer / local)
 1. Open `chrome://extensions` in Chrome.
@@ -36,6 +46,14 @@ Lateness Estimator is a small Chrome extension (Manifest V3) that injects short 
 	- `Usually Xm late` / `Estimated Xm late` → orange if 1–9 minutes, red if above 9 minutes
 - You can edit any chip's label by clicking it — edits persist to local storage.
 
+## Limitations
+- Chips are injected in the full event details dialog (not the small hover popover).
+- If Google Calendar changes its DOM, selector updates may be required.
+
+## Reset stored labels
+- To clear saved labels, open DevTools on any page and run:
+  - `chrome.storage.local.remove('lateLabels')`
+
 ## Files of interest
 - `src/contentScript.js` — entry point that initializes the observer
 - `src/observer.js` — detects event dialogs and triggers processing
@@ -46,8 +64,8 @@ Lateness Estimator is a small Chrome extension (Manifest V3) that injects short 
 - `src/styles.css` — chip styling and color variants
 
 ## Troubleshooting
-- If chips don't appear, open DevTools in the event dialog and check the console for `LabelModel` logs.
-- If you see duplicate chips, the extension will reset its session state when the dialog closes; re-open the dialog and check for updated logs.
+- If chips don't appear, reload the extension in `chrome://extensions` and reopen the event dialog.
+- If you see duplicate chips, close and reopen the dialog to reset session state.
 
 ## License & Disclaimer
 This project is provided as-is for personal or development use. It is intended for entertainment and productivity augmentation; it does not track or send personal data externally.
