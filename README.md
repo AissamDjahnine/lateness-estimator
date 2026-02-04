@@ -67,5 +67,15 @@ Lateness Estimator is a small Chrome extension (Manifest V3) that injects short 
 - If chips don't appear, reload the extension in `chrome://extensions` and reopen the event dialog.
 - If you see duplicate chips, close and reopen the dialog to reset session state.
 
+## FAQ
+**Is it secure?**  
+This extension runs only in the Google Calendar page context and uses Chrome's built-in storage APIs. It does not send data to any server.
+
+**What about data privacy?**  
+All labels are stored locally in `chrome.storage.local`, and email domains are stripped/masked before storage. Nothing is transmitted off-device.
+
+**Is the lateness data real?**  
+No—labels are deterministic and playful by default. The extension is meant for humor and lightweight productivity, not real tracking.
+
 ## License & Disclaimer
 This project is provided as-is for personal or development use. It is intended for entertainment and productivity augmentation; it does not track or send personal data externally.
