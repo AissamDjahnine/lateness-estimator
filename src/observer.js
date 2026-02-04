@@ -5,6 +5,7 @@ window.LateLabels.Observer = (function() {
   let debounceTimer = null;
   let lastDialog = null;
   let initialized = false;
+  let pollTimer = null;
 
   function mutationsAffectDialog(mutations, dialog) {
     if (!dialog) return true;
@@ -59,7 +60,10 @@ window.LateLabels.Observer = (function() {
   }
 
   function init() {
-    if (initialized) return;
+    if (initialized) {
+      checkForEventDialog();
+      return;
+    }
     const targetNode = document.body;
     const config = { childList: true, subtree: true };
 
@@ -69,6 +73,23 @@ window.LateLabels.Observer = (function() {
     observer = new MutationObserver(handleMutations);
     observer.observe(targetNode, config);
     initialized = true;
+
+    // Run an initial scan in case the dialog is already open
+    checkForEventDialog();
+
+    // Fallback checks for SPA navigation or UI updates that don't trigger mutations
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) checkForEventDialog();
+    });
+    window.addEventListener('focus', () => {
+      checkForEventDialog();
+    });
+
+    if (!pollTimer) {
+      pollTimer = setInterval(() => {
+        checkForEventDialog();
+      }, 1200);
+    }
   }
 
   return {
