@@ -12,7 +12,13 @@ window.LateLabels.UI = (function() {
       return;
     }
     
-    const dedupId = id;
+    let dedupId = id;
+    if (!dedupId) {
+      const fallbackSeed = `${name || ''}::${(parentEl.textContent || '').slice(0, 80)}`;
+      dedupId = fallbackSeed
+        ? `fallback-${fallbackSeed.split('').reduce((s, c) => s + c.charCodeAt(0), 0)}`
+        : `fallback-${Date.now()}`;
+    }
     const chipId = `late-chip-${dedupId}`;
 
     // STRICT DEDUPLICATION: Check a global chip marker and the row-specific class
@@ -164,10 +170,17 @@ window.LateLabels.UI = (function() {
     const saveLabel = async () => {
       const newVal = input.value.trim();
       if (newVal && window.LateLabels.Storage) {
-        anchor.textContent = newVal;
-        await window.LateLabels.Storage.updateStoredLabel(id, newVal);
+        try {
+          anchor.textContent = newVal;
+          await window.LateLabels.Storage.updateStoredLabel(id, newVal);
+          popover.remove();
+        } catch (err) {
+          // Keep the popover open so the user can retry
+          console.error('[saveLabel] Failed to persist label:', err);
+        }
+      } else {
+        popover.remove();
       }
-      popover.remove();
     };
 
     button.onclick = saveLabel;

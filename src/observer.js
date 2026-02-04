@@ -4,6 +4,7 @@ window.LateLabels.Observer = (function() {
   let observer = null;
   let debounceTimer = null;
   let lastDialog = null;
+  let initialized = false;
 
   function mutationsAffectDialog(mutations, dialog) {
     if (!dialog) return true;
@@ -58,11 +59,16 @@ window.LateLabels.Observer = (function() {
   }
 
   function init() {
+    if (initialized) return;
     const targetNode = document.body;
     const config = { childList: true, subtree: true };
 
+    if (observer && typeof observer.disconnect === 'function') {
+      observer.disconnect();
+    }
     observer = new MutationObserver(handleMutations);
     observer.observe(targetNode, config);
+    initialized = true;
   }
 
   return {
