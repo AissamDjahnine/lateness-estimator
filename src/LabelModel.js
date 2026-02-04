@@ -92,10 +92,7 @@ window.LateLabels.Model = (function() {
           // ignore selector errors
         }
       }
-      const dedupKey = attendee.email ? attendee.email.toLowerCase() : attendee.id;
-      console.log('[LabelModel] Processing attendee:', attendee.name, 'email:', attendee.email, 'keys:', Array.from(keys), 'already injected:', alreadyInjected);
       if (alreadyInjected && el.querySelector('.late-ext-chip')) {
-        console.log('[LabelModel] SKIPPING - already injected for keys:', Array.from(keys));
         return;
       }
 
@@ -117,8 +114,6 @@ window.LateLabels.Model = (function() {
       // Mark this attendee as injected to prevent duplicate chips from multiple elements
       for (const k of keys) if (k) injectedAttendees.add(k);
       if (attendee.email) injectedAttendees.add(attendee.email.toLowerCase());
-      console.log('[LabelModel] INJECTING chip for:', attendee.name, 'keys:', Array.from(keys));
-
       // Mark the element to avoid re-processing this exact DOM node
       el.dataset.lateExtProcessed = "true";
 

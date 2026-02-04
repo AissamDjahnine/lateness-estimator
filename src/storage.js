@@ -5,7 +5,7 @@ window.LateLabels.Storage = (function() {
 
   async function updateStoredLabel(key, newLabel) {
     return new Promise((resolve, reject) => {
-      if (!chrome || !chrome.runtime) {
+      if (typeof chrome === 'undefined' || !chrome.runtime) {
         reject(new Error('chrome.runtime not available'));
         return;
       }
@@ -24,7 +24,7 @@ window.LateLabels.Storage = (function() {
 
   async function getStoredLabel(key) {
     return new Promise((resolve, reject) => {
-      if (!chrome || !chrome.runtime) {
+      if (typeof chrome === 'undefined' || !chrome.runtime) {
         reject(new Error('chrome.runtime not available'));
         return;
       }

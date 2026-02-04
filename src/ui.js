@@ -73,7 +73,7 @@ window.LateLabels.UI = (function() {
     // Only attach the chip if we found a clear name container that appears to contain the attendee's name.
     // This prevents chips appearing for locations/rooms or other UI rows.
     const normalizedAttName = (name || '').toLowerCase().trim();
-    if (nameTarget && nameTarget.textContent && nameTarget.textContent.toLowerCase().includes(normalizedAttName)) {
+    if (normalizedAttName && nameTarget && nameTarget.textContent && nameTarget.textContent.toLowerCase().includes(normalizedAttName)) {
       nameTarget.style.display = 'inline-flex';
       nameTarget.style.alignItems = 'center';
       nameTarget.appendChild(chip);
@@ -142,12 +142,19 @@ window.LateLabels.UI = (function() {
 
     const popover = document.createElement('div');
     popover.className = 'late-ext-popover';
-    popover.innerHTML = `
-        <div class="late-popover-inner">
-            <input type="text" id="late-edit-input" value="${anchor.textContent}" autofocus />
-            <button id="late-save-btn">Save</button>
-        </div>
-    `;
+    const inner = document.createElement('div');
+    inner.className = 'late-popover-inner';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'late-edit-input';
+    input.value = anchor.textContent || '';
+    input.autofocus = true;
+    const button = document.createElement('button');
+    button.id = 'late-save-btn';
+    button.textContent = 'Save';
+    inner.appendChild(input);
+    inner.appendChild(button);
+    popover.appendChild(inner);
 
     document.body.appendChild(popover);
     const rect = anchor.getBoundingClientRect();
@@ -155,7 +162,7 @@ window.LateLabels.UI = (function() {
     popover.style.left = `${rect.left + window.scrollX}px`;
 
     const saveLabel = async () => {
-      const newVal = document.getElementById('late-edit-input').value.trim();
+      const newVal = input.value.trim();
       if (newVal && window.LateLabels.Storage) {
         anchor.textContent = newVal;
         await window.LateLabels.Storage.updateStoredLabel(id, newVal);
@@ -163,8 +170,11 @@ window.LateLabels.UI = (function() {
       popover.remove();
     };
 
-    popover.querySelector('#late-save-btn').onclick = saveLabel;
-    popover.querySelector('#late-edit-input').onkeydown = (e) => { if (e.key === 'Enter') saveLabel(); };
+    button.onclick = saveLabel;
+    input.onkeydown = (e) => {
+      if (e.key === 'Enter') saveLabel();
+      if (e.key === 'Escape') popover.remove();
+    };
 
     setTimeout(() => {
       const closer = (e) => {
