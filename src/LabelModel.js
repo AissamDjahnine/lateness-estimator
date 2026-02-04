@@ -11,6 +11,11 @@ window.LateLabels.Model = (function() {
     const text = (element.innerText || "").trim();
     const lines = text.split('\n').filter(t => t.trim().length > 0);
 
+    // Skip attachment rows (drive attachments) which can look like list items
+    if (!email && /attachment/i.test(text)) {
+      return null;
+    }
+
     if (lines.length === 0 && !email) {
       return null;
     }
@@ -51,6 +56,9 @@ window.LateLabels.Model = (function() {
       if (!attendee) return;
 
       const nameLower = (attendee.name || '').toLowerCase().trim();
+      if (!attendee.email && nameLower.includes('attachment')) {
+        return;
+      }
 
       // Normalize name to tokens (alphanumeric only) and skip if any token is an ignore term
       const nameTokens = nameLower.replace(/[^a-z0-9]+/g, ' ').split(/\s+/).filter(Boolean);
