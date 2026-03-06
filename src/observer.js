@@ -31,8 +31,28 @@ window.LateLabels.Observer = (function() {
     }, 200);
   }
 
+  function findBestEventDialog() {
+    const dialogs = Array.from(document.querySelectorAll('div[role="dialog"]'));
+    if (dialogs.length === 0) return null;
+
+    const scoredDialogs = dialogs
+      .map((dialog, index) => {
+        const attendeeSignals = dialog.querySelectorAll('[data-email], [data-hovercard-id]').length;
+        const rowSignals = dialog.querySelectorAll('div[role="listitem"], li').length;
+        return {
+          dialog: dialog,
+          index: index,
+          score: attendeeSignals * 10 + rowSignals
+        };
+      })
+      .filter((entry) => entry.score > 0)
+      .sort((a, b) => (b.score - a.score) || (b.index - a.index));
+
+    return scoredDialogs.length > 0 ? scoredDialogs[0].dialog : dialogs[dialogs.length - 1];
+  }
+
   function checkForEventDialog() {
-    const eventDialog = document.querySelector('div[role="dialog"]');
+    const eventDialog = findBestEventDialog();
 
     if (!eventDialog) {
       // Dialog is gone — clear any session-level state in the model

@@ -4,6 +4,35 @@ window.LateLabels.UI = (function() {
   // In-memory lock to avoid concurrent injections for the same dedup id
   const injectingKeys = new Set();
 
+  function applyChipColor(chip, label, templateType, fallbackLateHour) {
+    chip.classList.remove('late-green', 'late-orange', 'late-red');
+
+    let colorClass = null;
+    if (templateType === 'ontime') {
+      colorClass = 'late-green';
+    } else if (templateType === 'will-skip') {
+      colorClass = 'late-red';
+    } else {
+      const normalizedLabel = (label || '').toLowerCase();
+      const minuteMatch = normalizedLabel.match(/(\d+)m/);
+
+      if (normalizedLabel.includes('on time')) {
+        colorClass = 'late-green';
+      } else if (normalizedLabel.includes('skip')) {
+        colorClass = 'late-red';
+      } else if (minuteMatch) {
+        colorClass = Number(minuteMatch[1]) <= 9 ? 'late-orange' : 'late-red';
+      } else if (fallbackLateHour !== null && fallbackLateHour !== undefined && !isNaN(Number(fallbackLateHour))) {
+        const hour = Number(fallbackLateHour);
+        if (hour <= 8) colorClass = 'late-green';
+        else if (hour <= 15) colorClass = 'late-orange';
+        else colorClass = 'late-red';
+      }
+    }
+
+    if (colorClass) chip.classList.add(colorClass);
+  }
+
   async function injectChip(attendee, targetElement) {
     const { name, element, id } = attendee;
     // Use provided targetElement if available, otherwise fall back to attendee.element
@@ -23,11 +52,11 @@ window.LateLabels.UI = (function() {
 
     // STRICT DEDUPLICATION: Check a global chip marker and the row-specific class
     if (document.querySelector(`.late-ext-chip[data-late-key="${dedupId}"]`) || parentEl.querySelector('.late-ext-chip')) {
-      return;
+      return false;
     }
 
     // Avoid races: if another injection is in-flight for this id, skip
-    if (injectingKeys.has(dedupId)) return;
+    if (injectingKeys.has(dedupId)) return false;
     injectingKeys.add(dedupId);
 
     try {
@@ -80,8 +109,6 @@ window.LateLabels.UI = (function() {
     // This prevents chips appearing for locations/rooms or other UI rows.
     const normalizedAttName = (name || '').toLowerCase().trim();
     if (normalizedAttName && nameTarget && nameTarget.textContent && nameTarget.textContent.toLowerCase().includes(normalizedAttName)) {
-      nameTarget.style.display = 'inline-flex';
-      nameTarget.style.alignItems = 'center';
       nameTarget.appendChild(chip);
     } else {
       // If we couldn't find a matching name target, don't inject into generic rows (likely location/room)
@@ -92,50 +119,18 @@ window.LateLabels.UI = (function() {
       } else {
         // Do not inject for non-person rows
         chip.remove();
-        return;
+        return false;
       }
     }
 
-      // Color rules:
-      // - 'ontime' -> green
-      // - 'will-skip' -> red
-      // - 'usually' or 'estimated' -> orange if 1-9 minutes, red if >9 minutes
-      let colorClass = null;
-      try {
-        if (typeof tpl !== 'undefined' && tpl && tpl.type) {
-          if (tpl.type === 'ontime') colorClass = 'late-green';
-          else if (tpl.type === 'will-skip') colorClass = 'late-red';
-          else if (tpl.type === 'usually' || tpl.type === 'estimated') {
-            // minute variable computed above; if label was overridden, try to parse minutes from it
-            let m = typeof minute !== 'undefined' ? minute : null;
-            const mMatch = (label || '').match(/(\d+)m/);
-            if (mMatch) m = Number(mMatch[1]);
-            if (m !== null) {
-              if (m >= 1 && m <= 9) colorClass = 'late-orange';
-              else if (m > 9) colorClass = 'late-red';
-            } else {
-              colorClass = 'late-orange';
-            }
-          }
-        }
-      } catch (err) {
-        // fallback to attendee.lateHour if anything fails
-        const lateHour = (attendee && attendee.lateHour !== undefined) ? attendee.lateHour : null;
-        if (lateHour !== null && !isNaN(Number(lateHour))) {
-          const h = Number(lateHour);
-          if (h >= 0 && h <= 8) colorClass = 'late-green';
-          else if (h >= 9 && h <= 15) colorClass = 'late-orange';
-          else colorClass = 'late-red';
-        }
-      }
-
-      if (colorClass) chip.classList.add(colorClass);
+      applyChipColor(chip, label, tpl && tpl.type, attendee ? attendee.lateHour : null);
 
       chip.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
         renderEditPopover(chip, id);
       });
+      return true;
     } finally {
       // release lock
       injectingKeys.delete(dedupId);
@@ -170,11 +165,17 @@ window.LateLabels.UI = (function() {
     const saveLabel = async () => {
       const newVal = input.value.trim();
       if (newVal && window.LateLabels.Storage) {
+        const previousLabel = anchor.textContent || '';
         try {
           anchor.textContent = newVal;
+          anchor.dataset.lateLabel = newVal;
+          applyChipColor(anchor, newVal, null, null);
           await window.LateLabels.Storage.updateStoredLabel(id, newVal);
           popover.remove();
         } catch (err) {
+          anchor.textContent = previousLabel;
+          anchor.dataset.lateLabel = previousLabel;
+          applyChipColor(anchor, previousLabel, null, null);
           // Keep the popover open so the user can retry
           console.error('[saveLabel] Failed to persist label:', err);
         }

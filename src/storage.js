@@ -14,6 +14,8 @@ window.LateLabels.Storage = (function() {
         (response) => {
           if (chrome.runtime.lastError) {
             reject(chrome.runtime.lastError);
+          } else if (response && response.success === false) {
+            reject(new Error(response.error || 'Failed to update label'));
           } else {
             resolve();
           }

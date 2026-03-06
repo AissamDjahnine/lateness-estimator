@@ -4,6 +4,25 @@ window.LateLabels.Model = (function() {
   // Session-level seen keys to avoid duplicate chips across repeated mutations
   let sessionSeen = new Set();
   let injectedAttendees = new Set(); // Track which attendees we've already injected for
+
+  function buildCanonicalKey(attendee) {
+    if (attendee.email) {
+      return `email:${attendee.email.toLowerCase().trim()}`;
+    }
+
+    const normalizedName = (attendee.name || '')
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, ' ')
+      .trim()
+      .replace(/\s+/g, '-');
+
+    if (normalizedName) {
+      return `name:${normalizedName}`;
+    }
+
+    return attendee.id ? `id:${attendee.id.toLowerCase()}` : null;
+  }
+
   function getAttendeeFromElement(element) {
     // Prefer hovercard id when present, fall back to data-email attribute
     const emailRaw = element.getAttribute('data-hovercard-id') || element.getAttribute('data-email');
@@ -34,96 +53,44 @@ window.LateLabels.Model = (function() {
     return { id: finalId, name: displayName, element: element, email: email || null };
   }
 
-  function processAttendees(elements) {
+  async function processAttendees(elements) {
     const ignoreTerms = [
       "add guests", "join with", "location", "people", "yes", "no", "maybe", "agenda",
       "print", "duplicate", "publish", "report", "join by", "more phone", "minutes before",
       "10 minutes before", "tqv", "amsterdam", "room"
     ];
 
-    // Deduplicate by a stable key for the session: prefer email, else use last-name fallback
-    elements.forEach(el => {
+    // Deduplicate by a stable key for the session: prefer full email, else use full normalized name.
+    for (const el of elements) {
       // Skip if element already has a chip attached
-      if (el.querySelector('.late-ext-chip')) return;
+      if (el.querySelector('.late-ext-chip')) continue;
       
       // Skip if this element has already been processed
-      if (el.dataset.lateExtProcessed === 'true') return;
+      if (el.dataset.lateExtProcessed === 'true') continue;
 
       // Allow processing even if this DOM node doesn't include an email attribute;
       // dedup will be handled below by comparing normalized keys across elements.
 
       const attendee = getAttendeeFromElement(el);
-      if (!attendee) return;
+      if (!attendee) continue;
 
       const nameLower = (attendee.name || '').toLowerCase().trim();
       if (!attendee.email && nameLower.includes('attachment')) {
-        return;
+        continue;
       }
 
       // Normalize name to tokens (alphanumeric only) and skip if any token is an ignore term
       const nameTokens = nameLower.replace(/[^a-z0-9]+/g, ' ').split(/\s+/).filter(Boolean);
       if (nameTokens.some(tok => ignoreTerms.includes(tok))) {
-        return;
+        continue;
       }
 
-      // Build a set of possible dedupe keys for this attendee so variants map to the same logical person.
-      const keys = new Set();
+      const canonicalKey = buildCanonicalKey(attendee);
+      if (!canonicalKey) continue;
 
-      // Add canonical full-email (if present) and local-part as keys
-      if (attendee.email) {
-        const fullEmail = attendee.email.toLowerCase().trim();
-        keys.add(fullEmail);
-        const local = fullEmail.split('@')[0].replace(/[^a-z0-9]/g, '');
-        if (local) keys.add(local);
+      if (injectedAttendees.has(canonicalKey) || sessionSeen.has(canonicalKey)) {
+        continue;
       }
-
-      // 2) privacy id (derived earlier) without separators
-      if (attendee.id) {
-        keys.add(attendee.id.toLowerCase().replace(/[^a-z0-9]/g, ''));
-      }
-
-      // 3) last-name token fallback
-      const tokens = nameLower.split(/\s+/).filter(Boolean);
-      if (tokens.length > 0) {
-        keys.add(tokens[tokens.length - 1].replace(/[^a-z0-9]/g, ''));
-      }
-
-      // Determine if any of these keys already indicate we've injected for this person
-      let alreadyInjected = false;
-      for (const k of keys) {
-        if (!k) continue;
-        if (injectedAttendees.has(k)) { alreadyInjected = true; break; }
-        // Also check DOM: a chip may already exist with a data-late-key from another run
-        try {
-          if (document.querySelector(`.late-ext-chip[data-late-key="${k}"]`)) { alreadyInjected = true; break; }
-        } catch (e) {
-          // ignore selector errors
-        }
-      }
-      if (alreadyInjected && el.querySelector('.late-ext-chip')) {
-        return;
-      }
-
-      // If any of these keys were already seen AND the chip still exists in the element, skip
-      let already = false;
-      for (const k of keys) {
-        if (!k) continue;
-        if (sessionSeen.has(k)) { already = true; break; }
-      }
-      
-      // Only skip if we've already seen it AND the chip is still in the DOM
-      if (already && el.querySelector('.late-ext-chip')) {
-        return;
-      }
-
-      // Mark all keys as seen for future deduping
-      for (const k of keys) if (k) sessionSeen.add(k);
-      
-      // Mark this attendee as injected to prevent duplicate chips from multiple elements
-      for (const k of keys) if (k) injectedAttendees.add(k);
-      if (attendee.email) injectedAttendees.add(attendee.email.toLowerCase());
-      // Mark the element to avoid re-processing this exact DOM node
-      el.dataset.lateExtProcessed = "true";
 
       if (window.LateLabels.UI && typeof window.LateLabels.UI.injectChip === 'function') {
         // Provide a lateHour for coloring: prefer an explicit attribute, otherwise
@@ -136,9 +103,14 @@ window.LateLabels.Model = (function() {
           attendee.lateHour = Math.abs(hash) % 24;
         }
 
-        window.LateLabels.UI.injectChip(attendee, el);
+        const injected = await window.LateLabels.UI.injectChip(attendee, el);
+        if (injected) {
+          sessionSeen.add(canonicalKey);
+          injectedAttendees.add(canonicalKey);
+          el.dataset.lateExtProcessed = "true";
+        }
       }
-    });
+    }
   }
 
   function reset() {
