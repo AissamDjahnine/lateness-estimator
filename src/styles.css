@@ -4,7 +4,7 @@
     border: 1px solid #dadce0;
     border-radius: 999px;
     padding: 3px 9px;
-    margin: 0 0 0 8px;
+    margin: 0 0 0 12px;
     font-size: 11px;
     font-weight: 600;
     letter-spacing: 0.01em;
@@ -15,26 +15,16 @@
     white-space: nowrap;
     vertical-align: middle;
     line-height: 1.2;
-    max-width: 156px;
+    max-width: none;
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: initial;
     flex-shrink: 1;
     box-sizing: border-box;
     position: relative;
     z-index: 10002;
     transform-origin: right center;
     animation: late-chip-enter 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-.late-ext-badge-slot {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin-left: auto;
-    padding-left: 10px;
-    min-width: 0;
-    flex-shrink: 0;
 }
 
 .late-ext-chip-icon {
@@ -54,8 +44,8 @@
 
 .late-ext-chip-label {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: visible;
+    text-overflow: initial;
     white-space: nowrap;
 }
 
@@ -94,6 +84,38 @@
 .late-ext-popover.late-ext-popover-visible {
     opacity: 1;
     transform: translateY(0);
+}
+
+.late-ext-reroll-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 8px 0 0;
+    padding: 6px 10px;
+    border: 1px solid rgba(148, 163, 184, 0.32);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.06);
+    color: #cbd5e1;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
+}
+
+.late-ext-reroll-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(148, 163, 184, 0.5);
+    color: #f8fafc;
+}
+
+.late-ext-reroll-btn-inline {
+    margin: 0 0 0 10px;
+    vertical-align: middle;
+}
+
+.late-ext-reroll-btn-block {
+    margin: 10px 0 6px 34px;
 }
 
 .late-popover-inner {

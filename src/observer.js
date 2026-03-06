@@ -92,6 +92,10 @@ window.LateLabels.Observer = (function() {
       dialogBurstTimer = setTimeout(burst, 200);
     }
 
+    if (window.LateLabels.UI && typeof window.LateLabels.UI.ensureRerollButton === 'function') {
+      window.LateLabels.UI.ensureRerollButton(eventDialog);
+    }
+
     // Broad selectors to ensure we catch attendees
     const selectors = 'div[role="listitem"], div[data-email], div[data-hovercard-id], li';
     const possibleAttendees = eventDialog.querySelectorAll(selectors);

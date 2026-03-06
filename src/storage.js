@@ -2,6 +2,8 @@ window.LateLabels = window.LateLabels || {};
 
 window.LateLabels.Storage = (function() {
   const STORAGE_KEY = 'lateManualLabels';
+  const SETTINGS_KEY = 'lateSettings';
+  const DEFAULT_SETTINGS = { mode: 'playful' };
 
   function isBenignRuntimeError(error) {
     const message = error && error.message ? error.message : String(error || '');
@@ -58,8 +60,30 @@ window.LateLabels.Storage = (function() {
     });
   }
 
+  async function getSettings() {
+    return new Promise((resolve) => {
+      if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.local) {
+        resolve({ ...DEFAULT_SETTINGS });
+        return;
+      }
+
+      chrome.storage.local.get(SETTINGS_KEY, (result) => {
+        if (chrome.runtime && chrome.runtime.lastError && !isBenignRuntimeError(chrome.runtime.lastError)) {
+          resolve({ ...DEFAULT_SETTINGS });
+          return;
+        }
+
+        resolve({
+          ...DEFAULT_SETTINGS,
+          ...(result && result[SETTINGS_KEY] ? result[SETTINGS_KEY] : {})
+        });
+      });
+    });
+  }
+
   return {
     updateStoredLabel: updateStoredLabel,
-    getStoredLabel: getStoredLabel
+    getStoredLabel: getStoredLabel,
+    getSettings: getSettings
   };
 })();

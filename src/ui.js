@@ -4,6 +4,8 @@ window.LateLabels.UI = (function() {
   // In-memory lock to avoid concurrent injections for the same dedup id
   const injectingKeys = new Set();
   const sessionSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const rerollCounts = new Map();
+  let settingsPromise = null;
 
   function normalizeText(value) {
     return (value || '')
@@ -95,6 +97,70 @@ window.LateLabels.UI = (function() {
     return title || compactText || 'untitled-event';
   }
 
+  function getRerollCount(parentEl) {
+    const fingerprint = getEventFingerprint(parentEl);
+    return rerollCounts.get(fingerprint) || 0;
+  }
+
+  async function getMode() {
+    if (!settingsPromise) {
+      settingsPromise = (async () => {
+        if (window.LateLabels.Storage && typeof window.LateLabels.Storage.getSettings === 'function') {
+          const settings = await window.LateLabels.Storage.getSettings();
+          return settings && settings.mode ? settings.mode : 'playful';
+        }
+        return 'playful';
+      })();
+    }
+
+    return settingsPromise;
+  }
+
+  function getTemplatesForMode(mode) {
+    const normalizedMode = mode || 'playful';
+
+    const templatesByMode = {
+      playful: [
+        { type: 'usually', fmt: (m) => `Usually ${m}m late` },
+        { type: 'estimated', fmt: (m) => `Estimated ${m}m late` },
+        { type: 'running-late', fmt: (m) => `Espresso delay +${m}m` },
+        { type: 'dramatic', fmt: (m) => `Dramatic entrance +${m}m` },
+        { type: 'chaotic', fmt: (m) => `Physics says +${m}m` },
+        { type: 'ontime', fmt: () => `Shockingly on time` },
+        { type: 'ontime', fmt: () => `Early just to flex` },
+        { type: 'will-skip', fmt: () => `Skipping, blaming traffic` },
+        { type: 'will-skip', fmt: () => `Ghosting respectfully` }
+      ],
+      savage: [
+        { type: 'estimated', fmt: (m) => `Late by ${m}m and unbothered` },
+        { type: 'dramatic', fmt: (m) => `Arriving ${m}m late for the plot` },
+        { type: 'chaotic', fmt: (m) => `Time means nothing: +${m}m` },
+        { type: 'usually', fmt: (m) => `Predictably ${m}m late` },
+        { type: 'ontime', fmt: () => `Annoyingly punctual` },
+        { type: 'ontime', fmt: () => `On time, somehow` },
+        { type: 'will-skip', fmt: () => `Not coming, spiritually absent too` },
+        { type: 'will-skip', fmt: () => `Skipping with full confidence` }
+      ],
+      professional: [
+        { type: 'ontime', fmt: () => `On time` },
+        { type: 'ontime', fmt: () => `Likely on schedule` },
+        { type: 'estimated', fmt: (m) => `Estimated delay: ${m}m` },
+        { type: 'usually', fmt: (m) => `Typically ${m}m late` },
+        { type: 'running-late', fmt: (m) => `Running ${m}m behind` },
+        { type: 'will-skip', fmt: () => `May miss this meeting` }
+      ],
+      minimal: [
+        { type: 'ontime', fmt: () => `On time` },
+        { type: 'estimated', fmt: (m) => `+${m}m` },
+        { type: 'usually', fmt: (m) => `~${m}m` },
+        { type: 'running-late', fmt: (m) => `Delay ${m}m` },
+        { type: 'will-skip', fmt: () => `Skip` }
+      ]
+    };
+
+    return templatesByMode[normalizedMode] || templatesByMode.playful;
+  }
+
   function resolveSeverity(label, templateType, fallbackLateHour) {
     const normalizedLabel = (label || '').toLowerCase();
     const minuteMatch = normalizedLabel.match(/(\d+)m/);
@@ -175,18 +241,71 @@ window.LateLabels.UI = (function() {
     chip.dataset.lateTone = status.tone;
   }
 
-  function placeChipInBadgeSlot(nameTarget, chip, parentEl) {
-    if (!parentEl || !nameTarget) return false;
+  function placeChipInline(nameTarget, chip, parentEl) {
+    if (!nameTarget) return false;
 
-    let badgeSlot = Array.from(parentEl.children).find((child) => child.classList && child.classList.contains('late-ext-badge-slot'));
-    if (!badgeSlot) {
-      badgeSlot = document.createElement('span');
-      badgeSlot.className = 'late-ext-badge-slot';
-      parentEl.appendChild(badgeSlot);
+    const inlineHost = nameTarget.closest('span, div') || nameTarget;
+    if (inlineHost && inlineHost.parentNode) {
+      inlineHost.insertAdjacentElement('afterend', chip);
+      return true;
     }
 
-    badgeSlot.appendChild(chip);
-    return true;
+    if (parentEl) {
+      parentEl.appendChild(chip);
+      return true;
+    }
+
+    return false;
+  }
+
+  function ensureRerollButton(dialog) {
+    if (!dialog || dialog.querySelector('.late-ext-reroll-btn')) return;
+
+    const attendeeRow = dialog.querySelector('[data-email], [data-hovercard-id], div[role="listitem"], li');
+    const guestCountNode = Array.from(dialog.querySelectorAll('span, div'))
+      .find((node) => /\b\d+\s+guest/i.test((node.textContent || '').trim()));
+    const anchorNode = guestCountNode || attendeeRow;
+    if (!anchorNode || !anchorNode.parentNode) return;
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'late-ext-reroll-btn';
+    button.textContent = 'Reroll labels';
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      rerollEvent(dialog);
+    });
+
+    button.classList.add(guestCountNode ? 'late-ext-reroll-btn-inline' : 'late-ext-reroll-btn-block');
+    anchorNode.insertAdjacentElement('afterend', button);
+  }
+
+  function clearDialogLabels(dialog) {
+    dialog.querySelectorAll('.late-ext-chip').forEach((chip) => chip.remove());
+    dialog.querySelectorAll('[data-late-ext-processed]').forEach((element) => {
+      delete element.dataset.lateExtProcessed;
+    });
+    const popover = document.querySelector('.late-ext-popover');
+    if (popover) popover.remove();
+  }
+
+  async function rerollEvent(dialog) {
+    if (!dialog) return;
+
+    const fingerprint = getEventFingerprint(dialog);
+    rerollCounts.set(fingerprint, getRerollCount(dialog) + 1);
+    clearDialogLabels(dialog);
+
+    if (window.LateLabels.Model && typeof window.LateLabels.Model.reset === 'function') {
+      window.LateLabels.Model.reset();
+    }
+
+    const selectors = 'div[role="listitem"], div[data-email], div[data-hovercard-id], li';
+    const possibleAttendees = dialog.querySelectorAll(selectors);
+    if (possibleAttendees.length > 0 && window.LateLabels.Model) {
+      await window.LateLabels.Model.processAttendees(possibleAttendees);
+    }
   }
 
   async function injectChip(attendee, targetElement) {
@@ -217,23 +336,12 @@ window.LateLabels.UI = (function() {
 
     try {
 
-    // Labels reshuffle on page reload, but stay stable during the current page session.
-    const templates = [
-      { type: 'usually', fmt: (m) => `Usually ${m}m late` },
-      { type: 'estimated', fmt: (m) => `Estimated ${m}m late` },
-      { type: 'running-late', fmt: (m) => `Espresso delay +${m}m` },
-      { type: 'dramatic', fmt: (m) => `Dramatic entrance +${m}m` },
-      { type: 'chaotic', fmt: (m) => `Physics says +${m}m` },
-      { type: 'ontime', fmt: () => `Shockingly on time` },
-      { type: 'ontime', fmt: () => `Early just to flex` },
-      { type: 'will-skip', fmt: () => `Skipping, blaming traffic` },
-      { type: 'will-skip', fmt: () => `Ghosting respectfully` }
-    ];
-
+    const mode = await getMode();
+    const templates = getTemplatesForMode(mode);
     const minuteBuckets = [2,3,4,5,6,7,8,10,12,14,16,18];
 
     const eventFingerprint = getEventFingerprint(parentEl);
-    const rotationSeed = `${id}::${eventFingerprint}::${sessionSeed}`;
+    const rotationSeed = `${id}::${eventFingerprint}::${sessionSeed}::${getRerollCount(parentEl)}`;
     const templateIndex = hashString(`${rotationSeed}::template`) % templates.length;
     const minuteIndex = hashString(`${rotationSeed}::minute`) % minuteBuckets.length;
     const tpl = templates[templateIndex];
@@ -259,7 +367,7 @@ window.LateLabels.UI = (function() {
 
     // Only attach the chip if we find a compact text node that credibly matches the attendee name.
     const nameTarget = findNameTarget(parentEl, name);
-    if (!placeChipInBadgeSlot(nameTarget, chip, parentEl)) {
+    if (!placeChipInline(nameTarget, chip, parentEl)) {
       chip.remove();
       return false;
     }
@@ -349,5 +457,9 @@ window.LateLabels.UI = (function() {
     }, 0);
   }
 
-  return { injectChip: injectChip };
+  return {
+    injectChip: injectChip,
+    ensureRerollButton: ensureRerollButton,
+    rerollEvent: rerollEvent
+  };
 })();
