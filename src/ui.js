@@ -118,17 +118,75 @@ window.LateLabels.UI = (function() {
     return 0.45;
   }
 
-  function applyChipColor(chip, label, templateType, fallbackLateHour) {
+  function resolveStatus(label, templateType, fallbackLateHour) {
     const severity = resolveSeverity(label, templateType, fallbackLateHour);
+    const normalizedLabel = (label || '').toLowerCase();
+
+    if (templateType === 'will-skip' || normalizedLabel.includes('skip') || normalizedLabel.includes('ghosting')) {
+      return { severity, tone: 'skip', icon: 'x' };
+    }
+
+    if (severity <= 0.12) {
+      return { severity, tone: 'ontime', icon: 'o' };
+    }
+
+    return { severity, tone: 'late', icon: '~' };
+  }
+
+  function renderChipContent(chip, label, templateType, fallbackLateHour) {
+    const status = resolveStatus(label, templateType, fallbackLateHour);
+
+    chip.textContent = '';
+
+    const icon = document.createElement('span');
+    icon.className = `late-ext-chip-icon late-ext-chip-icon-${status.tone}`;
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = status.icon;
+
+    const text = document.createElement('span');
+    text.className = 'late-ext-chip-label';
+    text.textContent = label;
+
+    chip.appendChild(icon);
+    chip.appendChild(text);
+
+    return status;
+  }
+
+  function applyChipColor(chip, label, templateType, fallbackLateHour) {
+    const status = resolveStatus(label, templateType, fallbackLateHour);
+    const severity = status.severity;
     const green = { r: 46, g: 204, b: 113 };
+    const yellow = { r: 234, g: 179, b: 8 };
     const red = { r: 231, g: 76, b: 60 };
-    const background = mixColor(green, red, severity);
-    const border = mixColor(green, red, clamp(severity + 0.08, 0, 1));
+    const background = severity <= 0.5
+      ? mixColor(green, yellow, severity * 2)
+      : mixColor(yellow, red, (severity - 0.5) * 2);
+    const border = severity <= 0.5
+      ? mixColor(green, yellow, clamp(severity * 2 + 0.12, 0, 1))
+      : mixColor(yellow, red, clamp((severity - 0.5) * 2 + 0.12, 0, 1));
+    const text = mixColor({ r: 255, g: 255, b: 255 }, { r: 248, g: 250, b: 252 }, severity);
 
     chip.style.backgroundColor = toRgb(background);
     chip.style.borderColor = toRgb(border);
-    chip.style.color = '#ffffff';
-    chip.style.boxShadow = '0 1px 0 rgba(0,0,0,0.08)';
+    chip.style.color = toRgb(text);
+    chip.style.boxShadow = `0 1px 0 rgba(0,0,0,0.08), 0 0 0 1px rgba(${border.r}, ${border.g}, ${border.b}, 0.08) inset`;
+    chip.style.setProperty('--late-chip-dot', toRgb(mixColor(border, { r: 255, g: 255, b: 255 }, 0.15)));
+    chip.dataset.lateTone = status.tone;
+  }
+
+  function placeChipInBadgeSlot(nameTarget, chip, parentEl) {
+    if (!parentEl || !nameTarget) return false;
+
+    let badgeSlot = Array.from(parentEl.children).find((child) => child.classList && child.classList.contains('late-ext-badge-slot'));
+    if (!badgeSlot) {
+      badgeSlot = document.createElement('span');
+      badgeSlot.className = 'late-ext-badge-slot';
+      parentEl.appendChild(badgeSlot);
+    }
+
+    badgeSlot.appendChild(chip);
+    return true;
   }
 
   async function injectChip(attendee, targetElement) {
@@ -197,11 +255,11 @@ window.LateLabels.UI = (function() {
     chip.dataset.lateKey = dedupId;
     chip.dataset.lateLabel = label;
     chip.title = label;
-    chip.textContent = label;
+    renderChipContent(chip, label, tpl && tpl.type, attendee ? attendee.lateHour : null);
 
     // Only attach the chip if we find a compact text node that credibly matches the attendee name.
     const nameTarget = findNameTarget(parentEl, name);
-    if (!placeChipNearName(nameTarget, chip, parentEl)) {
+    if (!placeChipInBadgeSlot(nameTarget, chip, parentEl)) {
       chip.remove();
       return false;
     }
@@ -231,7 +289,7 @@ window.LateLabels.UI = (function() {
     const input = document.createElement('input');
     input.type = 'text';
     input.id = 'late-edit-input';
-    input.value = anchor.textContent || '';
+    input.value = anchor.dataset.lateLabel || '';
     input.autofocus = true;
     const button = document.createElement('button');
     button.id = 'late-save-btn';
@@ -244,20 +302,27 @@ window.LateLabels.UI = (function() {
     const rect = anchor.getBoundingClientRect();
     popover.style.top = `${rect.bottom + window.scrollY + 5}px`;
     popover.style.left = `${rect.left + window.scrollX}px`;
+    // Force the initial hidden state to paint before toggling visibility.
+    popover.getBoundingClientRect();
+    setTimeout(() => {
+      popover.classList.add('late-ext-popover-visible');
+    }, 24);
 
     const saveLabel = async () => {
       const newVal = input.value.trim();
       if (newVal && window.LateLabels.Storage) {
-        const previousLabel = anchor.textContent || '';
+        const previousLabel = anchor.dataset.lateLabel || '';
         try {
-          anchor.textContent = newVal;
           anchor.dataset.lateLabel = newVal;
+          anchor.title = newVal;
+          renderChipContent(anchor, newVal, null, null);
           applyChipColor(anchor, newVal, null, null);
           await window.LateLabels.Storage.updateStoredLabel(id, newVal);
           popover.remove();
         } catch (err) {
-          anchor.textContent = previousLabel;
           anchor.dataset.lateLabel = previousLabel;
+          anchor.title = previousLabel;
+          renderChipContent(anchor, previousLabel, null, null);
           applyChipColor(anchor, previousLabel, null, null);
           // Keep the popover open so the user can retry
           console.error('[saveLabel] Failed to persist label:', err);
