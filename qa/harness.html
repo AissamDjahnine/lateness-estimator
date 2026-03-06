@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lateness Estimator QA Harness</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        padding: 24px;
+        background: #f6f8fb;
+        color: #1f2937;
+      }
+
+      .layout {
+        display: grid;
+        gap: 24px;
+        grid-template-columns: minmax(0, 1fr) 320px;
+      }
+
+      .panel {
+        background: #ffffff;
+        border: 1px solid #dbe2ea;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      }
+
+      .event-dialog {
+        border: 1px solid #d0d7de;
+        border-radius: 12px;
+        background: #fff;
+        padding: 16px;
+      }
+
+      .attendee-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 0;
+        border-bottom: 1px solid #eef2f6;
+      }
+
+      .attendee-row:last-child {
+        border-bottom: 0;
+      }
+
+      .avatar {
+        width: 28px;
+        height: 28px;
+        border-radius: 999px;
+        background: #cbd5e1;
+        flex: 0 0 auto;
+      }
+
+      .attendee-name {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .controls {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      button {
+        border: 0;
+        border-radius: 8px;
+        background: #2563eb;
+        color: #fff;
+        padding: 8px 12px;
+        cursor: pointer;
+      }
+
+      button.secondary {
+        background: #64748b;
+      }
+
+      #log {
+        white-space: pre-wrap;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        max-height: 420px;
+        overflow: auto;
+      }
+    </style>
+    <link rel="stylesheet" href="/src/styles.css">
+  </head>
+  <body>
+    <div class="layout">
+      <div class="panel">
+        <div class="controls">
+          <button id="run-tests">Run QA Checks</button>
+          <button id="swap-dialog" class="secondary">Open Secondary Dialog</button>
+          <button id="reset-state" class="secondary">Reset Harness</button>
+        </div>
+
+        <div id="dialogs-root">
+          <div class="event-dialog" role="dialog" id="primary-dialog">
+            <h2>Primary Event</h2>
+            <div class="attendee-row" role="listitem" data-email="alex@company.com">
+              <div class="avatar"></div>
+              <span class="attendee-name" aria-label="Alex">Alex</span>
+            </div>
+            <div class="attendee-row" role="listitem" data-email="alex@vendor.com">
+              <div class="avatar"></div>
+              <span class="attendee-name" aria-label="Alex Vendor">Alex Vendor</span>
+            </div>
+            <div class="attendee-row" role="listitem" data-hovercard-id="sam@example.com">
+              <div class="avatar"></div>
+              <span class="attendee-name" aria-label="Sam Example">Sam Example</span>
+            </div>
+            <div class="attendee-row" role="listitem">
+              <div class="avatar"></div>
+              <span class="attendee-name" aria-label="Taylor Smith">Taylor Smith</span>
+            </div>
+            <div class="attendee-row" role="listitem">
+              <span>Location</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>QA Log</h3>
+        <div id="log"></div>
+      </div>
+    </div>
+
+    <script src="/qa/harness.js"></script>
+    <script src="/src/background.js"></script>
+    <script src="/src/storage.js"></script>
+    <script src="/src/ui.js"></script>
+    <script src="/src/LabelModel.js"></script>
+    <script src="/src/observer.js"></script>
+    <script src="/src/contentScript.js"></script>
+  </body>
+  </html>

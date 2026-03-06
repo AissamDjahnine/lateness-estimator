@@ -1,6 +1,56 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lateness Estimator Options</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
   <body>
-    <h1>Lateness Estimator Options</h1>
+    <main class="page">
+      <section class="hero">
+        <p class="eyebrow">Lateness Estimator</p>
+        <h1>Label Mode</h1>
+        <p class="lede">Choose how the extension talks about people arriving late. Manual edits still override generated labels.</p>
+      </section>
+
+      <section class="panel">
+        <form id="mode-form" class="mode-grid">
+          <label class="mode-card">
+            <input type="radio" name="mode" value="playful">
+            <span class="mode-title">Playful</span>
+            <span class="mode-copy">Light jokes and friendly chaos.</span>
+            <span class="mode-example">“Espresso delay +8m”</span>
+          </label>
+
+          <label class="mode-card">
+            <input type="radio" name="mode" value="savage">
+            <span class="mode-title">Savage</span>
+            <span class="mode-copy">Sharper, more sarcastic labels.</span>
+            <span class="mode-example">“Late by 10m and unbothered”</span>
+          </label>
+
+          <label class="mode-card">
+            <input type="radio" name="mode" value="professional">
+            <span class="mode-title">Professional</span>
+            <span class="mode-copy">Polite and workplace-safe.</span>
+            <span class="mode-example">“Estimated delay: 7m”</span>
+          </label>
+
+          <label class="mode-card">
+            <input type="radio" name="mode" value="minimal">
+            <span class="mode-title">Minimal</span>
+            <span class="mode-copy">Compact labels for tight layouts.</span>
+            <span class="mode-example">“+6m”</span>
+          </label>
+        </form>
+
+        <div class="actions">
+          <button id="save-button" type="button">Save Mode</button>
+          <p id="status" class="status" aria-live="polite"></p>
+        </div>
+      </section>
+    </main>
+    <script src="options.js"></script>
   </body>
 </html>
