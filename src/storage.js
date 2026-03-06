@@ -1,7 +1,14 @@
 window.LateLabels = window.LateLabels || {};
 
 window.LateLabels.Storage = (function() {
-  const STORAGE_KEY = 'lateLabels';
+  const STORAGE_KEY = 'lateManualLabels';
+
+  function isBenignRuntimeError(error) {
+    const message = error && error.message ? error.message : String(error || '');
+    return message.includes('Extension context invalidated') ||
+      message.includes('message port closed before a response was received') ||
+      message.includes('Receiving end does not exist');
+  }
 
   async function updateStoredLabel(key, newLabel) {
     return new Promise((resolve, reject) => {
@@ -13,6 +20,10 @@ window.LateLabels.Storage = (function() {
         { action: 'updateLabel', key: key, label: newLabel },
         (response) => {
           if (chrome.runtime.lastError) {
+            if (isBenignRuntimeError(chrome.runtime.lastError)) {
+              resolve();
+              return;
+            }
             reject(chrome.runtime.lastError);
           } else if (response && response.success === false) {
             reject(new Error(response.error || 'Failed to update label'));
@@ -34,6 +45,10 @@ window.LateLabels.Storage = (function() {
         { action: 'getLabel', key: key },
         (response) => {
           if (chrome.runtime.lastError) {
+            if (isBenignRuntimeError(chrome.runtime.lastError)) {
+              resolve(null);
+              return;
+            }
             reject(chrome.runtime.lastError);
           } else {
             resolve(response?.label || null);

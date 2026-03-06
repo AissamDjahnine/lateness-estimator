@@ -1,7 +1,7 @@
 // Service worker for Lateness Estimator extension
 // Handles message passing from content scripts to access chrome.storage API
 
-const STORAGE_KEY = 'lateLabels';
+const STORAGE_KEY = 'lateManualLabels';
 let updateQueue = Promise.resolve();
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {

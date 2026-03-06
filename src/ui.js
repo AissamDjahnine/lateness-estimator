@@ -3,34 +3,132 @@ window.LateLabels = window.LateLabels || {};
 window.LateLabels.UI = (function() {
   // In-memory lock to avoid concurrent injections for the same dedup id
   const injectingKeys = new Set();
+  const sessionSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
-  function applyChipColor(chip, label, templateType, fallbackLateHour) {
-    chip.classList.remove('late-green', 'late-orange', 'late-red');
+  function normalizeText(value) {
+    return (value || '')
+      .toLowerCase()
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
 
-    let colorClass = null;
-    if (templateType === 'ontime') {
-      colorClass = 'late-green';
-    } else if (templateType === 'will-skip') {
-      colorClass = 'late-red';
-    } else {
-      const normalizedLabel = (label || '').toLowerCase();
-      const minuteMatch = normalizedLabel.match(/(\d+)m/);
+  function findNameTarget(parentEl, attendeeName) {
+    const normalizedAttName = normalizeText(attendeeName);
+    if (!normalizedAttName) return null;
 
-      if (normalizedLabel.includes('on time')) {
-        colorClass = 'late-green';
-      } else if (normalizedLabel.includes('skip')) {
-        colorClass = 'late-red';
-      } else if (minuteMatch) {
-        colorClass = Number(minuteMatch[1]) <= 9 ? 'late-orange' : 'late-red';
-      } else if (fallbackLateHour !== null && fallbackLateHour !== undefined && !isNaN(Number(fallbackLateHour))) {
-        const hour = Number(fallbackLateHour);
-        if (hour <= 8) colorClass = 'late-green';
-        else if (hour <= 15) colorClass = 'late-orange';
-        else colorClass = 'late-red';
-      }
+    const candidates = Array.from(parentEl.querySelectorAll('span, div'))
+      .filter((node) => {
+        if (!node || node.classList.contains('late-ext-chip')) return false;
+        if (node.querySelector('.late-ext-chip')) return false;
+        if (node.querySelector('a, button, input, textarea')) return false;
+
+        const text = normalizeText(node.textContent);
+        if (!text) return false;
+        if (!text.includes(normalizedAttName)) return false;
+        if (text.length > Math.max(120, normalizedAttName.length + 80)) return false;
+
+        return true;
+      })
+      .sort((a, b) => {
+        const aTextLength = normalizeText(a.textContent).length;
+        const bTextLength = normalizeText(b.textContent).length;
+        const aChildren = a.querySelectorAll('span, div').length;
+        const bChildren = b.querySelectorAll('span, div').length;
+
+        return (aTextLength - bTextLength) || (aChildren - bChildren);
+      });
+
+    return candidates[0] || null;
+  }
+
+  function placeChipNearName(nameTarget, chip, parentEl) {
+    if (!nameTarget) return false;
+
+    if (nameTarget.parentNode) {
+      nameTarget.insertAdjacentElement('afterend', chip);
+      return true;
     }
 
-    if (colorClass) chip.classList.add(colorClass);
+    if (parentEl) {
+      parentEl.appendChild(chip);
+      return true;
+    }
+
+    return false;
+  }
+
+  function clamp(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+  }
+
+  function mixColor(start, end, weight) {
+    const safeWeight = clamp(weight, 0, 1);
+    return {
+      r: Math.round(start.r + (end.r - start.r) * safeWeight),
+      g: Math.round(start.g + (end.g - start.g) * safeWeight),
+      b: Math.round(start.b + (end.b - start.b) * safeWeight)
+    };
+  }
+
+  function toRgb(color) {
+    return `rgb(${color.r}, ${color.g}, ${color.b})`;
+  }
+
+  function hashString(value) {
+    let hash = 0;
+    const input = String(value || '');
+    for (let index = 0; index < input.length; index += 1) {
+      hash = ((hash << 5) - hash) + input.charCodeAt(index);
+      hash |= 0;
+    }
+    return Math.abs(hash);
+  }
+
+  function getEventFingerprint(parentEl) {
+    const dialog = parentEl.closest('div[role="dialog"]');
+    if (!dialog) return 'no-dialog';
+
+    const titleNode = dialog.querySelector('h1, h2, [role="heading"]');
+    const title = normalizeText(titleNode ? titleNode.textContent : '');
+    const compactText = normalizeText(dialog.textContent).slice(0, 220);
+
+    return title || compactText || 'untitled-event';
+  }
+
+  function resolveSeverity(label, templateType, fallbackLateHour) {
+    const normalizedLabel = (label || '').toLowerCase();
+    const minuteMatch = normalizedLabel.match(/(\d+)m/);
+
+    if (templateType === 'ontime' || normalizedLabel.includes('on time') || normalizedLabel.includes('shockingly') || normalizedLabel.includes('early') || normalizedLabel.includes('punctual')) {
+      return 0;
+    }
+
+    if (templateType === 'will-skip' || normalizedLabel.includes('skip') || normalizedLabel.includes('ghosting')) {
+      return 1;
+    }
+
+    if (minuteMatch) {
+      return clamp(Number(minuteMatch[1]) / 18, 0.12, 0.95);
+    }
+
+    if (fallbackLateHour !== null && fallbackLateHour !== undefined && !isNaN(Number(fallbackLateHour))) {
+      return clamp(Number(fallbackLateHour) / 23, 0, 1);
+    }
+
+    return 0.45;
+  }
+
+  function applyChipColor(chip, label, templateType, fallbackLateHour) {
+    const severity = resolveSeverity(label, templateType, fallbackLateHour);
+    const green = { r: 46, g: 204, b: 113 };
+    const red = { r: 231, g: 76, b: 60 };
+    const background = mixColor(green, red, severity);
+    const border = mixColor(green, red, clamp(severity + 0.08, 0, 1));
+
+    chip.style.backgroundColor = toRgb(background);
+    chip.style.borderColor = toRgb(border);
+    chip.style.color = '#ffffff';
+    chip.style.boxShadow = '0 1px 0 rgba(0,0,0,0.08)';
   }
 
   async function injectChip(attendee, targetElement) {
@@ -61,33 +159,33 @@ window.LateLabels.UI = (function() {
 
     try {
 
-    // Deterministic label templates similar to requested examples:
-    // "Usually 4m late", "Usually 7m late", "Will skip", "Typically on time", "Estimated 12m late"
+    // Labels reshuffle on page reload, but stay stable during the current page session.
     const templates = [
       { type: 'usually', fmt: (m) => `Usually ${m}m late` },
-      { type: 'usually', fmt: (m) => `Usually ${m}m late` },
-      { type: 'will-skip', fmt: () => `Will skip` },
-      { type: 'ontime', fmt: () => `Typically on time` },
-      { type: 'estimated', fmt: (m) => `Estimated ${m}m late` }
+      { type: 'estimated', fmt: (m) => `Estimated ${m}m late` },
+      { type: 'running-late', fmt: (m) => `Espresso delay +${m}m` },
+      { type: 'dramatic', fmt: (m) => `Dramatic entrance +${m}m` },
+      { type: 'chaotic', fmt: (m) => `Physics says +${m}m` },
+      { type: 'ontime', fmt: () => `Shockingly on time` },
+      { type: 'ontime', fmt: () => `Early just to flex` },
+      { type: 'will-skip', fmt: () => `Skipping, blaming traffic` },
+      { type: 'will-skip', fmt: () => `Ghosting respectfully` }
     ];
 
-    // A small list of plausible minute values (includes 4,7,12 from your examples)
-    const minuteBuckets = [2,3,4,5,7,8,10,12,15];
+    const minuteBuckets = [2,3,4,5,6,7,8,10,12,14,16,18];
 
-    // Deterministic selection based on id so label is consistent per person
-    const idHash = ('' + id).split('').reduce((s,c)=>s + c.charCodeAt(0), 0);
-    const tpl = templates[idHash % templates.length];
-    const minute = minuteBuckets[idHash % minuteBuckets.length];
+    const eventFingerprint = getEventFingerprint(parentEl);
+    const rotationSeed = `${id}::${eventFingerprint}::${sessionSeed}`;
+    const templateIndex = hashString(`${rotationSeed}::template`) % templates.length;
+    const minuteIndex = hashString(`${rotationSeed}::minute`) % minuteBuckets.length;
+    const tpl = templates[templateIndex];
+    const minute = minuteBuckets[minuteIndex];
 
     let label = tpl.fmt(minute);
     try {
       if (window.LateLabels.Storage) {
-        try {
-          const stored = await window.LateLabels.Storage.getStoredLabel(id);
-          if (stored) label = stored;
-        } catch (err) {
-          console.error('[injectChip] Error getting stored label:', err);
-        }
+        const stored = await window.LateLabels.Storage.getStoredLabel(id);
+        if (stored) label = stored;
       }
     } catch (e) {
       // ignore storage errors and keep deterministic label
@@ -98,29 +196,14 @@ window.LateLabels.UI = (function() {
     chip.id = chipId;
     chip.dataset.lateKey = dedupId;
     chip.dataset.lateLabel = label;
+    chip.title = label;
     chip.textContent = label;
 
-    // Try to find the most specific name container
-    const nameTarget = parentEl.querySelector('span[aria-label]') || 
-                       parentEl.querySelector('div[id*="name"]') || 
-                       parentEl.querySelector('span:not(.late-ext-chip)');
-
-    // Only attach the chip if we found a clear name container that appears to contain the attendee's name.
-    // This prevents chips appearing for locations/rooms or other UI rows.
-    const normalizedAttName = (name || '').toLowerCase().trim();
-    if (normalizedAttName && nameTarget && nameTarget.textContent && nameTarget.textContent.toLowerCase().includes(normalizedAttName)) {
-      nameTarget.appendChild(chip);
-    } else {
-      // If we couldn't find a matching name target, don't inject into generic rows (likely location/room)
-      // Append only as a last resort if the parent explicitly looks like a person row (avatar present)
-      const hasAvatar = !!parentEl.querySelector('img, svg, [role="img"], .avatar');
-      if (hasAvatar) {
-        parentEl.appendChild(chip);
-      } else {
-        // Do not inject for non-person rows
-        chip.remove();
-        return false;
-      }
+    // Only attach the chip if we find a compact text node that credibly matches the attendee name.
+    const nameTarget = findNameTarget(parentEl, name);
+    if (!placeChipNearName(nameTarget, chip, parentEl)) {
+      chip.remove();
+      return false;
     }
 
       applyChipColor(chip, label, tpl && tpl.type, attendee ? attendee.lateHour : null);
