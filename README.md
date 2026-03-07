@@ -7,7 +7,15 @@ It does not read anyone's soul.
 It just gives your meetings the kind of commentary they probably deserve.
 
 <p align="center">
-  <img src="assets/images/Screenshot-1.png" width="600" alt="Lateness Estimator Screenshot">
+  <img src="assets/screenshots/event-dialog-main.jpg" width="600" alt="Lateness Estimator event dialog screenshot">
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/modes.jpg" width="600" alt="Lateness Estimator modes screenshot">
+</p>
+
+<p align="center">
+  <img src="assets/screenshots/badge-styles.jpg" width="600" alt="Lateness Estimator badge styles screenshot">
 </p>
 
 
