@@ -6,17 +6,24 @@ It does not know who is actually late.
 It does not read anyone's soul.
 It just gives your meetings the kind of commentary they probably deserve.
 
-<p align="center">
-  <img src="assets/screenshots/event-dialog-main.jpg" width="600" alt="Lateness Estimator event dialog screenshot">
-</p>
-
-<p align="center">
-  <img src="assets/screenshots/modes.jpg" width="600" alt="Lateness Estimator modes screenshot">
-</p>
-
-<p align="center">
-  <img src="assets/screenshots/badge-styles.jpg" width="600" alt="Lateness Estimator badge styles screenshot">
-</p>
+<table align="center">
+  <tr>
+    <td align="center">
+      <img src="assets/screenshots/event-dialog-main.jpg" width="520" alt="Lateness Estimator event dialog screenshot">
+    </td>
+    <td align="center">
+      <img src="assets/screenshots/modes.jpg" width="520" alt="Lateness Estimator modes screenshot">
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="assets/screenshots/badge-styles.jpg" width="520" alt="Lateness Estimator badge styles screenshot">
+    </td>
+    <td align="center">
+      <img src="assets/screenshots/options.png" width="520" alt="Lateness Estimator options screenshot">
+    </td>
+  </tr>
+</table>
 
 
 ## What it does
