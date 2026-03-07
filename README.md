@@ -9,18 +9,13 @@ It just gives your meetings the kind of commentary they probably deserve.
 <table align="center">
   <tr>
     <td align="center">
-      <img src="assets/screenshots/event-dialog-main.jpg" width="520" alt="Lateness Estimator event dialog screenshot">
+      <img src="assets/screenshots/event-dialog-main.jpg" width="340" alt="Lateness Estimator event dialog screenshot">
     </td>
     <td align="center">
-      <img src="assets/screenshots/modes.jpg" width="520" alt="Lateness Estimator modes screenshot">
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <img src="assets/screenshots/badge-styles.jpg" width="520" alt="Lateness Estimator badge styles screenshot">
+      <img src="assets/screenshots/badge-styles.jpg" width="340" alt="Lateness Estimator badge styles screenshot">
     </td>
     <td align="center">
-      <img src="assets/screenshots/options.png" width="520" alt="Lateness Estimator options screenshot">
+      <img src="assets/screenshots/options.png" width="340" alt="Lateness Estimator options screenshot">
     </td>
   </tr>
 </table>
