@@ -86,38 +86,6 @@
     transform: translateY(0);
 }
 
-.late-ext-reroll-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    margin: 8px 0 0;
-    padding: 6px 10px;
-    border: 1px solid rgba(148, 163, 184, 0.32);
-    border-radius: 999px;
-    background: rgba(255, 255, 255, 0.06);
-    color: #cbd5e1;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    cursor: pointer;
-    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease;
-}
-
-.late-ext-reroll-btn:hover {
-    background: rgba(255, 255, 255, 0.12);
-    border-color: rgba(148, 163, 184, 0.5);
-    color: #f8fafc;
-}
-
-.late-ext-reroll-btn-inline {
-    margin: 0 0 0 10px;
-    vertical-align: middle;
-}
-
-.late-ext-reroll-btn-block {
-    margin: 10px 0 6px 34px;
-}
-
 .late-popover-inner {
     display: flex;
     gap: 8px;

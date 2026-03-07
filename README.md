@@ -16,14 +16,14 @@ It just gives your meetings the kind of commentary they probably deserve.
 - Generates labels like `Espresso delay +8m`, `Shockingly on time`, `Skipping, blaming traffic`, or `On time, somehow`.
 - Colors chips on a soft green → yellow → red scale depending on how cursed the fictional arrival estimate is.
 - Lets you manually edit any chip if the generated lie is not the lie you wanted.
-- Gives you a `Reroll labels` button so you can reshuffle the vibes for the current event without reloading the page.
+- Reshuffles the auto-generated labels when you close and reopen the event, because commitment is for calendars, not fake punctuality.
 - Avoids attaching chips to random calendar furniture like rooms, attachments, and other non-human things.
 
 ## Quick usage
 1. Open a Google Calendar event (full event details dialog).
 2. Watch the attendee list become judgmental.
 3. Click a chip to edit it.
-4. Click `Reroll labels` if the current batch is not dramatic enough.
+4. Close and reopen the event if the current batch is not dramatic enough.
 
 ## Modes
 You can pick how rude or restrained the extension should be from the options page.
@@ -49,8 +49,8 @@ Open it from the extension details page in `chrome://extensions`, or via the ext
 4. Reload the extension after making changes while developing.
 
 ## Configuration & Behavior
-- Labels reshuffle on page reload.
-- `Reroll labels` reshuffles only the current event.
+- Labels reshuffle when you close and reopen the full event dialog.
+- A full page refresh also gives you a fresh batch.
 - Manual edits override generated labels and stay put until you change them again.
 - Chips are displayed inline next to attendee names so they read like part of the guest row, not a detached weather report.
 
@@ -68,7 +68,7 @@ Open it from the extension details page in `chrome://extensions`, or via the ext
 - `src/contentScript.js` — entry point that initializes the observer
 - `src/observer.js` — detects event dialogs and triggers processing
 - `src/LabelModel.js` — attendee extraction, deduplication, session state
-- `src/ui.js` — chip creation, label generation, reroll behavior, and edit popover
+- `src/ui.js` — chip creation, label generation, dialog-session reshuffling, and edit popover
 - `src/storage.js` — storage wrapper that messages the background worker
 - `src/background.js` — service worker handling storage messages
 - `src/styles.css` — chip styling, alignment, and motion
@@ -76,8 +76,8 @@ Open it from the extension details page in `chrome://extensions`, or via the ext
 
 ## Troubleshooting
 - If chips don't appear, reload the extension in `chrome://extensions` and reopen the event dialog.
-- If reroll seems stuck, make sure the event dialog is still the full details view and not a tiny hover surface.
-- If you manually edited a label and reroll does nothing for that person, that is expected: manual overrides win.
+- If the labels seem stuck, make sure you fully closed and reopened the event dialog, not just clicked around inside it.
+- If you manually edited a label and it refuses to change later, that is expected: manual overrides win.
 
 ## FAQ
 **Is it secure?**  
@@ -92,8 +92,8 @@ Absolutely not. This extension is basically decorative slander.
 **Can I choose the tone?**  
 Yes. Use the options page and pick `Playful`, `Savage`, `Professional`, or `Minimal`.
 
-**Can I reroll a meeting without refreshing the page?**  
-Yes. Use the `Reroll labels` button inside the event dialog.
+**How do the labels change?**  
+Close and reopen the event dialog, or refresh the page. Manual edits stay fixed until you change them yourself.
 
 ## License & Disclaimer
 This project is provided as-is for fun, experimentation, and making meetings feel slightly less sterile. It does not track real attendance behavior and should not be treated like a forensic instrument.

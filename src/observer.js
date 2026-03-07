@@ -59,6 +59,9 @@ window.LateLabels.Observer = (function() {
       if (lastDialog && window.LateLabels && window.LateLabels.Model && typeof window.LateLabels.Model.reset === 'function') {
         window.LateLabels.Model.reset();
       }
+      if (lastDialog && window.LateLabels && window.LateLabels.UI && typeof window.LateLabels.UI.clearDialogLabels === 'function') {
+        window.LateLabels.UI.clearDialogLabels(lastDialog);
+      }
       lastDialog = null;
       if (dialogObserver && typeof dialogObserver.disconnect === 'function') {
         dialogObserver.disconnect();
@@ -70,6 +73,9 @@ window.LateLabels.Observer = (function() {
     if (eventDialog !== lastDialog) {
       if (window.LateLabels && window.LateLabels.Model && typeof window.LateLabels.Model.reset === 'function') {
         window.LateLabels.Model.reset();
+      }
+      if (window.LateLabels && window.LateLabels.UI && typeof window.LateLabels.UI.startDialogSession === 'function') {
+        window.LateLabels.UI.startDialogSession();
       }
       lastDialog = eventDialog;
 
@@ -90,10 +96,6 @@ window.LateLabels.Observer = (function() {
         }
       };
       dialogBurstTimer = setTimeout(burst, 200);
-    }
-
-    if (window.LateLabels.UI && typeof window.LateLabels.UI.ensureRerollButton === 'function') {
-      window.LateLabels.UI.ensureRerollButton(eventDialog);
     }
 
     // Broad selectors to ensure we catch attendees

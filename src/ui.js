@@ -3,9 +3,8 @@ window.LateLabels = window.LateLabels || {};
 window.LateLabels.UI = (function() {
   // In-memory lock to avoid concurrent injections for the same dedup id
   const injectingKeys = new Set();
-  const sessionSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const rerollCounts = new Map();
   let settingsPromise = null;
+  let activeDialogSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
   function normalizeText(value) {
     return (value || '')
@@ -97,9 +96,8 @@ window.LateLabels.UI = (function() {
     return title || compactText || 'untitled-event';
   }
 
-  function getRerollCount(parentEl) {
-    const fingerprint = getEventFingerprint(parentEl);
-    return rerollCounts.get(fingerprint) || 0;
+  function startDialogSession() {
+    activeDialogSeed = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
 
   async function getMode() {
@@ -258,29 +256,6 @@ window.LateLabels.UI = (function() {
     return false;
   }
 
-  function ensureRerollButton(dialog) {
-    if (!dialog || dialog.querySelector('.late-ext-reroll-btn')) return;
-
-    const attendeeRow = dialog.querySelector('[data-email], [data-hovercard-id], div[role="listitem"], li');
-    const guestCountNode = Array.from(dialog.querySelectorAll('span, div'))
-      .find((node) => /\b\d+\s+guest/i.test((node.textContent || '').trim()));
-    const anchorNode = guestCountNode || attendeeRow;
-    if (!anchorNode || !anchorNode.parentNode) return;
-
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'late-ext-reroll-btn';
-    button.textContent = 'Reroll labels';
-    button.addEventListener('click', (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      rerollEvent(dialog);
-    });
-
-    button.classList.add(guestCountNode ? 'late-ext-reroll-btn-inline' : 'late-ext-reroll-btn-block');
-    anchorNode.insertAdjacentElement('afterend', button);
-  }
-
   function clearDialogLabels(dialog) {
     dialog.querySelectorAll('.late-ext-chip').forEach((chip) => chip.remove());
     dialog.querySelectorAll('[data-late-ext-processed]').forEach((element) => {
@@ -288,24 +263,6 @@ window.LateLabels.UI = (function() {
     });
     const popover = document.querySelector('.late-ext-popover');
     if (popover) popover.remove();
-  }
-
-  async function rerollEvent(dialog) {
-    if (!dialog) return;
-
-    const fingerprint = getEventFingerprint(dialog);
-    rerollCounts.set(fingerprint, getRerollCount(dialog) + 1);
-    clearDialogLabels(dialog);
-
-    if (window.LateLabels.Model && typeof window.LateLabels.Model.reset === 'function') {
-      window.LateLabels.Model.reset();
-    }
-
-    const selectors = 'div[role="listitem"], div[data-email], div[data-hovercard-id], li';
-    const possibleAttendees = dialog.querySelectorAll(selectors);
-    if (possibleAttendees.length > 0 && window.LateLabels.Model) {
-      await window.LateLabels.Model.processAttendees(possibleAttendees);
-    }
   }
 
   async function injectChip(attendee, targetElement) {
@@ -341,7 +298,7 @@ window.LateLabels.UI = (function() {
     const minuteBuckets = [2,3,4,5,6,7,8,10,12,14,16,18];
 
     const eventFingerprint = getEventFingerprint(parentEl);
-    const rotationSeed = `${id}::${eventFingerprint}::${sessionSeed}::${getRerollCount(parentEl)}`;
+    const rotationSeed = `${id}::${eventFingerprint}::${activeDialogSeed}`;
     const templateIndex = hashString(`${rotationSeed}::template`) % templates.length;
     const minuteIndex = hashString(`${rotationSeed}::minute`) % minuteBuckets.length;
     const tpl = templates[templateIndex];
@@ -459,7 +416,7 @@ window.LateLabels.UI = (function() {
 
   return {
     injectChip: injectChip,
-    ensureRerollButton: ensureRerollButton,
-    rerollEvent: rerollEvent
+    clearDialogLabels: clearDialogLabels,
+    startDialogSession: startDialogSession
   };
 })();
